@@ -323,6 +323,13 @@ def log_rows():
         s = log.get(key, {"purpose": "", "source": "", "status": "active", "installed": None,
                           "modifications": [], "updates": [], "uninstalled": None})
         a = by_key.get(key)
+        if a is None and key.startswith("claude.ai:"):
+            # A claude.ai skill sharing a local skill's name is merged into that local row by
+            # availability(); without this its log entry would look removed. Skip it while the
+            # local row still reports it as uploaded, so a real removal is still shown.
+            merged = by_key.get(key.split(":", 1)[1])
+            if merged and merged["kind"] == "local" and not merged["chat"].startswith(remote.NONE):
+                continue
         if a:
             kind, chat, code, name = a["kind"], a["chat"], a["code"], a["name"]
         else:  # only in history: removed

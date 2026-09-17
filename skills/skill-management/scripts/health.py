@@ -97,6 +97,8 @@ def cmd_validate(args):
         for n in installed - set(log):
             cross.append({"level": "warn", "issue": f"'{n}' is installed but missing from the skills log"})
         for n, s in log.items():
+            if ":" in n:
+                continue  # claude.ai skills and app plugins have no folder here; `sync-remote` tracks them
             if s["status"] == "active" and n not in installed:
                 cross.append({"level": "warn", "issue": f"log says '{n}' is active but its folder is gone"})
             if s["status"] == "disabled" and n not in disabled:
