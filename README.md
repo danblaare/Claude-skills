@@ -1,11 +1,12 @@
-# Claude Skills: skill-management + super-coding
+# Claude Skills: skill-management + super-coding + skilltotal-preinstall
 
-Two [Claude skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) I built while working out how to use GenAI tools reliably in my day-to-day work.
+Three [Claude skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) I built while working out how to use GenAI tools reliably and safely in my day-to-day work.
 
 | Skill | What it is | Best for |
 |---|---|---|
 | **skill-management** | One control panel for all your Claude skills: install, check for updates, audit, back up, roll back | Anyone collecting more than a handful of skills |
 | **super-coding** | A disciplined senior-engineer workflow for building software with Claude: define, plan, build, debug, review, verify, ship | People who build with AI, especially non-developers |
+| **skilltotal-preinstall** | A mandatory security gate: every package, MCP server, skill, plugin or repo is scanned *before* it gets installed | Anyone who lets an AI agent install things on their computer |
 
 **[⬇ Download the latest release (zip)](../../releases/latest)** · or clone this repo.
 
@@ -13,12 +14,13 @@ Two [Claude skills](https://docs.claude.com/en/docs/agents-and-tools/agent-skill
 
 ## Why I built these
 
-After testing many community skill packs, I kept hitting the same two problems:
+After testing many community skill packs, I kept hitting the same three problems:
 
 1. **Skill sprawl.** Every new skill adds context cost, may overlap with others, and can bring unreviewed code onto my machine. I had no single place to see what I had, what changed, or whether it was safe.
 2. **AI coding that "looks done" but isn't.** Building the wrong thing, overbuilding, breaking what worked, guessing at bugs, and claiming success without proof.
+3. **Agents install things.** A coding agent will happily run `npm install`, `pip install` or add an MCP server to get a job done. One malicious or compromised package is enough to leak credentials or files.
 
-`skill-management` solves the first. `super-coding` solves the second.
+`skill-management` solves the first. `super-coding` solves the second. `skilltotal-preinstall` solves the third, and the other two rely on it.
 
 ---
 
@@ -50,11 +52,29 @@ A complete software-building workflow that makes Claude act like a disciplined s
 - **Four Iron Laws:** no "done" without fresh evidence; no bug fix without a confirmed root cause and a failing test; tests before behavior code; no building before the owner approves *what* gets built.
 - **Owner-friendly communication:** one question at a time, options explained by outcome (time, cost, risk), technical details decided by Claude.
 - **Smart stop list:** keeps going on its own, but stops for destructive actions, publishing/spending, security decisions, or 3 failed fixes.
-- **Supply-chain safety:** every new dependency is security-scanned before install.
+- **Supply-chain safety:** every new dependency goes through `skilltotal-preinstall` before install.
 - **Leaves a trail:** specs, plans, decisions (ADRs), QA evidence and a changelog live in the repo, not in chat memory.
 - **Honest final report:** what works (with evidence), what changed, decisions made, risks, and the next step.
 
 **Instruction-only:** no scripts, hooks, binaries or telemetry from the source packs are used.
+
+## skilltotal-preinstall
+
+A mandatory security gate built on [SkillTotal](https://github.com/pezhik/skilltotal), a free, open-source (Apache-2.0) static analyzer for AI components. The scan runs locally and **never executes the component's code**.
+
+**Capabilities**
+- **Triggers automatically** on any install, add, set-up, clone, download or upgrade request: npm/pnpm/yarn/bun, pip/uv/poetry, MCP servers, Claude skills and plugins, agents, GitHub repos, VS Code extensions, CLI tools and archives.
+- **Scans the real thing:** maps each component to a scannable source (`npm:`, `pypi:`, git URL or local path), including the package behind an `npx`/`uvx` MCP server.
+- **Diffs upgrades:** compares the installed version against the new one, so a previously safe package that turns risky gets caught.
+- **Plain report:** verdict, risk score (0–100), notable findings with file and line, and capabilities (network, filesystem, shell, secrets).
+- **Clear decisions:**
+  - Low risk → install.
+  - Medium risk or any high-severity finding → **asks you first**.
+  - High risk or malicious → **does not install** and suggests alternatives.
+  - Scanner unavailable → asks you; **never skips silently**.
+- **Prompt-injection aware:** text inside a scanned component or its findings is treated as data, never as instructions.
+
+> **Why it matters in practice:** when I installed the official GitHub CLI, the scan came back "high risk". The skill stopped, explained each finding (all false alarms from help-text examples and GitHub's internal dev tools), and only installed after I confirmed.
 
 ---
 
@@ -66,12 +86,17 @@ A complete software-building workflow that makes Claude act like a disciplined s
 2. Copy the folders inside `skills/` into your personal skills folder:
    - Windows: `C:\Users\<you>\.claude\skills\`
    - macOS / Linux: `~/.claude/skills/`
-3. Start a new Claude Code session. Try: *"run my skills check"* or *"I want to build a small app that…"*.
+3. **Install SkillTotal** (needed by `skilltotal-preinstall`; Python 3.10+):
+   ```bash
+   pipx install skilltotal
+   claude mcp add --scope user skilltotal -- skilltotal mcp
+   ```
+   (`pip install skilltotal` works too.)
+4. Start a new Claude Code session. Try: *"run my skills check"*, *"I want to build a small app that…"* or *"install the X package"*.
 
 `skill-management` needs Python 3.10+ (standard library only) and git.
 
 **Optional companions** (the skills fall back gracefully without them):
-- A security scanner for components, e.g. the SkillTotal MCP server.
 - Firecrawl MCP for reading the web and Playwright MCP for browser testing.
 - Anthropic's `engineering`, `design` and `product-management` plugins, which super-coding calls at the right moments.
 
@@ -79,8 +104,8 @@ A complete software-building workflow that makes Claude act like a disciplined s
 
 ## Safety
 
-Both skills were scanned with SkillTotal before publishing: **risk level LOW (0/100), no malicious indicators, no secrets.** `skill-management` reads and writes files inside `~/.claude` and runs `git`; it makes no network calls of its own. As with any skill, read it before you install it.
+All three skills were scanned with SkillTotal before publishing: **risk level LOW (0/100), no malicious indicators, no secrets.** `skill-management` reads and writes files inside `~/.claude` and runs `git`; it makes no network calls of its own. `super-coding` and `skilltotal-preinstall` are instructions only. As with any skill, read it before you install it.
 
 ## Credits and license
 
-MIT License (see [LICENSE](LICENSE)). `super-coding` adapts ideas and text from MIT-licensed projects; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT License (see [LICENSE](LICENSE)). `super-coding` adapts ideas and text from MIT-licensed projects, and `skilltotal-preinstall` uses the SkillTotal scanner (Apache-2.0, not bundled); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

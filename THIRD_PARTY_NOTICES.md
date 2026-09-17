@@ -1,5 +1,14 @@
 # Third-party notices
 
+## SkillTotal (used by `skills/skilltotal-preinstall`, not bundled)
+
+`skilltotal-preinstall` calls the SkillTotal scanner, which you install separately. No SkillTotal code is included in this repository.
+
+- Repository: https://github.com/pezhik/skilltotal
+- License: Apache License 2.0
+
+## Projects adapted in `skills/super-coding`
+
 `skills/super-coding` adapts ideas and text from the projects below. No code, scripts, hooks or binaries from them are included. Details of what came from where are in `skills/super-coding/references/sources-and-conflicts.md`.
 
 | Project | Repository | License | Copyright |
