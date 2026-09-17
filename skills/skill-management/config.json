@@ -3,5 +3,6 @@
   "keep_backups": 8,
   "keep_exports": 8,
   "dashboard_artifact_url": null,
-  "obsidian_note": null
+  "obsidian_note": null,
+  "github_repo": null
 }

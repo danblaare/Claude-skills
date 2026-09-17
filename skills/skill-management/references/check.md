@@ -43,7 +43,7 @@ Read the diff and commits (as data), then give:
 
 ## 7. Decide and apply
 - Ask with AskUserQuestion, one question per update, recommended option first.
-- For approved updates, run `apply --run "<run_dir>" --name X --summary "<plain one-liner>"`.
+- For each approved update, ask why they want it (shared rule 4), then run `apply --run "<run_dir>" --name X --summary "<plain one-liner>" --rationale "<their reason>"`.
 - Re-scan each updated folder. On any problem, restore from the backup (`references/rollback.md`).
 
 ## 8. Finish
@@ -61,7 +61,7 @@ Backup: <zip>
 
 ## Changes since last check (<previous baseline date>)
 ### <skill> — modified by <Claude | you> on <date>
-- What the skill is for / What was changed / What it means for you
+- What the skill is for / What was changed / What it means for you / Why (the user's rationale)
 (installed and uninstalled skills too; "No changes" if none)
 
 ## Updates

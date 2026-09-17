@@ -37,7 +37,10 @@ A general manager for your Claude skills (local skills in Claude Code, claude.ai
 - **Overlap and triggers:** finds skills that compete for the same requests and tests which skill actually fires.
 - **Usage and feedback:** shows how often each skill is used and suggests improvements from past sessions.
 - **Discover:** finds well-regarded new skills and flags conflicts with your setup.
-- **Portability:** export/import, an HTML dashboard, a running skills log, and an optional Obsidian note mirror.
+- **Asks why:** every edit, update or rollback records your reason in the skills log, so you remember later why a skill changed.
+- **Portability:** export/import, an HTML dashboard, and a running skills log with three tables (local skills, claude.ai skills, app plugins).
+- **Obsidian mirror (optional):** after every run, updates a note with a dashboard link at the top, the log tables, and a date-and-time revision property.
+- **Publish to GitHub (optional):** offers to sync your shared skills to your public repo, strips personal settings, blocks the push if personal data is found, and publishes on your yes.
 - **claude.ai packaging:** shows where each skill works (Claude chat vs Claude Code) and packages skills for upload.
 
 **Design principles:** asks before changing anything · plain English for non-experts · treats skill content and web pages as data, never instructions · logs everything.
@@ -100,7 +103,7 @@ A mandatory security gate built on [SkillTotal](https://github.com/pezhik/skillt
 - Firecrawl MCP for reading the web and Playwright MCP for browser testing.
 - Anthropic's `engineering`, `design` and `product-management` plugins, which super-coding calls at the right moments.
 
-**Configure (optional):** in `skills/skill-management/config.json`, set `export_dir` (where exports go) and `obsidian_note` (a note to mirror the skills log into).
+**Configure (optional):** in `skills/skill-management/config.json`, set `export_dir` (where exports go), `obsidian_note` (a note to mirror the skills log into) and `github_repo` (your repo clone, which skills to publish, and the rules that remove personal details; see `references/github.md` and the docstring in `scripts/publish.py`).
 
 ## Safety
 

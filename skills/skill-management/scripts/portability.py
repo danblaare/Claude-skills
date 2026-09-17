@@ -24,37 +24,70 @@ def _log_markdown():
 
 NOTE_START = "<!-- skill-management:log:start -->"
 NOTE_END = "<!-- skill-management:log:end -->"
+DASH_START = "<!-- skill-management:dashboard:start -->"
+DASH_END = "<!-- skill-management:dashboard:end -->"
+# Matches the user's revision property however it is spelled: last-revision, Last revision, last_revision.
+REVISION_PROP = re.compile(r"(?mi)^(last[ _-]?revision)[ \t]*:.*$")
+
+
+def _replace_block(body, start, end, block):
+    before, rest = body.split(start, 1)
+    return before + block + rest.split(end, 1)[1]
+
+
+def _dashboard_links(note):
+    """Refresh the dashboard file and return the Markdown links to it (vault link, plus online link if published)."""
+    cfg = core.load_config()
+    export_dir = Path(cfg.get("export_dir") or "")
+    target = export_dir / "Skills dashboard.html" if str(export_dir) and export_dir.is_dir() else BACKUPS / "dashboard.html"
+    target.write_text(render(collect()), encoding="utf-8")
+
+    vault = next((p for p in note.parents if (p / ".obsidian").is_dir()), None)
+    if vault and vault in target.parents:
+        links = [f"[[{target.relative_to(vault).as_posix()}|Open the skills dashboard]]"]
+    else:
+        links = [f"[Open the skills dashboard]({target.as_uri()})"]
+    if cfg.get("dashboard_artifact_url"):
+        links.append(f"[online version]({cfg['dashboard_artifact_url']})")
+    return links, str(target)
 
 
 def update_obsidian_note(path=None):
-    """Write the skills log into the configured Obsidian note and set its last-revision property.
+    """Write the skills log into the configured Obsidian note, with a dashboard link at the top,
+    and set its revision property to the current date and time.
 
-    Only the block between the markers is replaced; other note content and properties are kept.
-    On first use (no markers) the note body after the frontmatter is replaced by the managed block.
+    Only the blocks between the markers are replaced; other note content and properties are kept.
+    On first use (no log markers) the note body after the frontmatter is replaced by the managed blocks.
     """
     note = Path(path or core.load_config().get("obsidian_note") or "")
     if not str(note) or not note.parent.is_dir():
         return {"error": f"Obsidian note folder not reachable: {note}"}
     text = note.read_text(encoding="utf-8") if note.exists() else ""
-    today = core.today()
+    # Obsidian's date & time property format.
+    revised = dt.datetime.now().strftime("%Y-%m-%dT%H:%M")
 
     fm_match = re.match(r"^---\r?\n(.*?)\r?\n---\r?\n?", text, re.S)
     fm, body = (fm_match.group(1), text[fm_match.end():]) if fm_match else ("", text)
-    if re.search(r"(?m)^last-revision:.*$", fm):
-        fm = re.sub(r"(?m)^last-revision:.*$", f"last-revision: {today}", fm)
+    if REVISION_PROP.search(fm):
+        fm = REVISION_PROP.sub(lambda m: f"{m.group(1)}: {revised}", fm, count=1)
     else:
-        fm = (fm + "\n" if fm else "") + f"last-revision: {today}"
+        fm = (fm + "\n" if fm else "") + f"last-revision: {revised}"
 
-    block = f"{NOTE_START}\n{_log_markdown().strip()}\n{NOTE_END}"
+    links, dashboard = _dashboard_links(note)
+    dash_block = f"{DASH_START}\n📊 {' · '.join(links)} (updated {revised.replace('T', ' ')})\n{DASH_END}"
+    log_block = f"{NOTE_START}\n{_log_markdown().strip()}\n{NOTE_END}"
     if NOTE_START in body and NOTE_END in body:
-        before, rest = body.split(NOTE_START, 1)
-        body = before + block + rest.split(NOTE_END, 1)[1]
+        body = _replace_block(body, NOTE_START, NOTE_END, log_block)
         mode = "replaced managed block"
     else:
-        body = f"# Log\n\n{block}\n"
+        body = f"# Log\n\n{log_block}\n"
         mode = "first write: body replaced with managed block"
+    if DASH_START in body and DASH_END in body:
+        body = _replace_block(body, DASH_START, DASH_END, dash_block)
+    else:
+        body = f"{dash_block}\n\n{body.lstrip()}"
     note.write_text(f"---\n{fm}\n---\n{body}", encoding="utf-8")
-    return {"note": str(note), "last_revision": today, "mode": mode}
+    return {"note": str(note), "last_revision": revised, "dashboard": dashboard, "mode": mode}
 
 
 def cmd_obsidian_note(args):
@@ -115,8 +148,9 @@ def collect():
         s, label = r["log"], r["name"]
         if s.get("installed"):
             events.append((s["installed"], label, "Installed", s.get("source", "")))
-        events += [(m["date"], label, f"Modified by {m['by']}", m["summary"]) for m in s.get("modifications", [])]
-        events += [(u["date"], label, "Updated", u["summary"]) for u in s.get("updates", [])]
+        why = lambda e: f" — why: {e['rationale']}" if e.get("rationale") else ""
+        events += [(m["date"], label, f"Modified by {m['by']}", m["summary"] + why(m)) for m in s.get("modifications", [])]
+        events += [(u["date"], label, "Updated", u["summary"] + why(u)) for u in s.get("updates", [])]
         if s.get("packaged"):
             events.append((s["packaged"]["date"], label, "Packaged for claude.ai", s["packaged"]["file"]))
         if s.get("disabled"):

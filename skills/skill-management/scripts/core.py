@@ -274,7 +274,7 @@ def save_log(log):
 
 
 def log_event(skill, kind, date=None, by=None, summary=None, source=None, purpose=None, reason=None,
-              from_ref=None, to_ref=None):
+              from_ref=None, to_ref=None, rationale=None):
     log = load_log()
     s = log["skills"].setdefault(skill, {"purpose": "", "source": "", "status": "active", "installed": None,
                                          "modifications": [], "updates": [], "uninstalled": None})
@@ -283,12 +283,19 @@ def log_event(skill, kind, date=None, by=None, summary=None, source=None, purpos
         s["purpose"] = purpose
     if source:
         s["source"] = source
+    why = {"rationale": rationale} if rationale else {}
     if kind == "installed":
         s.update(status="active", installed=date, uninstalled=None)
     elif kind == "modified":
-        s["modifications"].append({"date": date, "by": by or "unknown", "summary": summary or ""})
+        s["modifications"].append({"date": date, "by": by or "unknown", "summary": summary or "", **why})
     elif kind == "updated":
-        s["updates"].append({"date": date, "from": from_ref, "to": to_ref, "summary": summary or ""})
+        s["updates"].append({"date": date, "from": from_ref, "to": to_ref, "summary": summary or "", **why})
+    elif kind == "rationale":
+        # Attach the user's rationale to the most recent edit or update (e.g. one logged by sync-remote or apply).
+        latest = max(s["modifications"] + s["updates"], key=lambda e: (e["date"], "rationale" not in e), default=None)
+        if latest is None:
+            raise SystemExit(f"no edit or update logged for {skill} to attach a rationale to")
+        latest["rationale"] = rationale or "no rationale given"
     elif kind == "uninstalled":
         s.update(status="uninstalled", disabled=None,
                  uninstalled={"date": date, "reason": reason or "no reason given"})
@@ -299,7 +306,7 @@ def log_event(skill, kind, date=None, by=None, summary=None, source=None, purpos
         s["modifications"].append({"date": date, "by": by or "you", "summary": "Re-enabled"})
     elif kind == "restored":
         s.update(status="active", uninstalled=None, disabled=None)
-        s["modifications"].append({"date": date, "by": by or "rollback", "summary": summary or "Restored from backup"})
+        s["modifications"].append({"date": date, "by": by or "rollback", "summary": summary or "Restored from backup", **why})
     save_log(log)
     return s
 
@@ -332,7 +339,7 @@ def log_rows():
 def cmd_log(args):
     if args.log_cmd == "event":
         print(json.dumps(log_event(args.skill, args.type, args.date, args.by, args.summary, args.source,
-                                   args.purpose, args.reason, args.from_ref, args.to_ref), indent=2, ensure_ascii=False))
+                                   args.purpose, args.reason, args.from_ref, args.to_ref, args.rationale), indent=2, ensure_ascii=False))
         return
 
     import remote  # local import: remote depends on core
@@ -346,8 +353,9 @@ def _short(text, limit=80):
 
 def _history(s):
     """One date-sorted list of everything that happened to a skill, newest first."""
-    events = [(m["date"], f"edited by {m['by']}: {m['summary']}") for m in s.get("modifications", [])]
-    events += [(u["date"], f"updated: {u['summary']}") for u in s.get("updates", [])]
+    why = lambda e: f" — why: {e['rationale']}" if e.get("rationale") else ""
+    events = [(m["date"], f"edited by {m['by']}: {m['summary']}{why(m)}") for m in s.get("modifications", [])]
+    events += [(u["date"], f"updated: {u['summary']}{why(u)}") for u in s.get("updates", [])]
     if s.get("packaged"):
         events.append((s["packaged"]["date"], "packaged for claude.ai upload"))
     if s.get("disabled"):
@@ -383,34 +391,35 @@ def render_log_tables(rows, synced_on, cloud, plugins):
         out.append(f"| {r['name']} | {status} | {_short(s.get('purpose')) or '—'} | {source} | "
                    f"{s.get('installed') or 'unknown'} | {_history(s)} |")
 
-    out += ["", "### claude.ai skills and app plugins: Claude chat and Claude Code", "",
+    is_plugin = lambda r: r["kind"] in ("plugin", "cli plugin")
+    remote_status = lambda r: "✗ removed" if r["removed"] else "✅ on" if r["chat"].startswith("✅") else "⏸ off"
+
+    out += ["", "### claude.ai skills: Claude chat and Claude Code", "",
             "| Skill | Type | Status | Used for | Last updated | History (newest first) |",
             "|---|---|---|---|---|---|"]
 
-    def remote_key(r):
+    def skill_key(r):
         name = r["key"].split(":", 1)[-1]
-        if r["kind"] in ("plugin", "cli plugin"):
-            group = 3
-        else:
-            group = 0 if cloud.get(name, {}).get("creator") == "you" else 1 if r["kind"] == "claude.ai" else 2
+        group = 0 if cloud.get(name, {}).get("creator") == "you" else 1 if r["kind"] == "claude.ai" else 2
         return (r["removed"], group, name)
 
-    for r in sorted(remote_rows, key=remote_key):
+    for r in sorted((r for r in remote_rows if not is_plugin(r)), key=skill_key):
         s, name = r["log"], r["key"].split(":", 1)[-1]
-        if r["kind"] in ("plugin", "cli plugin"):
-            p = plugins.get(name, {})
-            n = len(p.get("skills", []))
-            kind = f"plugin, {n} skill{'s' if n != 1 else ''}" + (" (Code only)" if r["kind"] == "cli plugin" else "")
-            used_for = _short(", ".join(p.get("skills", [])), 110) or "—"
-            updated = p.get("updated") or "—"
-        else:
-            c = cloud.get(name, {})
-            kind = ("yours" if c.get("creator") == "you" else "built into the app" if r["kind"] == "app built-in"
-                    else "Anthropic")
-            used_for = _short(s.get("purpose") or c.get("description")) or "—"
-            updated = c.get("updated") or "—"
-        status = "✗ removed" if r["removed"] else "✅ on" if r["chat"].startswith("✅") else "⏸ off"
-        out.append(f"| {name} | {kind} | {status} | {used_for} | {updated} | {_history(s)} |")
+        c = cloud.get(name, {})
+        kind = ("yours" if c.get("creator") == "you" else "built into the app" if r["kind"] == "app built-in"
+                else "Anthropic")
+        used_for = _short(s.get("purpose") or c.get("description")) or "—"
+        out.append(f"| {name} | {kind} | {remote_status(r)} | {used_for} | {c.get('updated') or '—'} | {_history(s)} |")
+
+    out += ["", "### App plugins: Claude chat and Claude Code", "",
+            "| Plugin | Skills | Status | Includes | Last updated | History (newest first) |",
+            "|---|---|---|---|---|---|"]
+    for r in sorted((r for r in remote_rows if is_plugin(r)), key=lambda r: (r["removed"], r["key"])):
+        s, name = r["log"], r["key"].split(":", 1)[-1]
+        p = plugins.get(name, {})
+        count = str(len(p.get("skills", []))) + (" (Code only)" if r["kind"] == "cli plugin" else "")
+        includes = _short(", ".join(p.get("skills", [])), 110) or "—"
+        out.append(f"| {name} | {count} | {remote_status(r)} | {includes} | {p.get('updated') or '—'} | {_history(s)} |")
 
     out += ["", f"claude.ai list as of {synced_on or 'unknown'}, from the Claude desktop app's synced copy "
                 f"(open the app to refresh it)."]
@@ -552,5 +561,5 @@ def cmd_apply(args):
     # An approved update is not a custom modification: move this skill's baseline forward.
     take_snapshot([args.name])
     log_event(args.name, "updated", summary=args.summary or "updated from upstream",
-              from_ref=old_commit[:7], to_ref=res["latest_commit"][:7])
+              from_ref=old_commit[:7], to_ref=res["latest_commit"][:7], rationale=args.rationale)
     print(json.dumps({"installed": args.name, "commit": res["latest_commit"], "target": str(target)}, indent=2))

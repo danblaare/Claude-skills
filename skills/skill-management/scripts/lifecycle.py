@@ -224,7 +224,8 @@ def cmd_restore(args):
         if (SKILLS / n).exists():
             shutil.rmtree(SKILLS / n)
         shutil.copytree(root / n, SKILLS / n)
-        log_event(n, "restored", summary=f"Rolled back to the backup of {taken}" + (f": {args.reason}" if args.reason else ""))
+        log_event(n, "restored", summary=f"Rolled back to the backup of {taken}" + (f": {args.reason}" if args.reason else ""),
+                  rationale=args.rationale)
     core.take_snapshot(names)
     print(json.dumps({"restored": names, "from": str(zpath), "safety_backup": safety["backup"]}, indent=2))
 

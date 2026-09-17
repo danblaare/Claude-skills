@@ -6,7 +6,7 @@ Updates             : backup, check, apply
 Lifecycle           : stage-install, place, disable, enable, uninstall, backups, restore, new
 Health              : validate, cost, trigger-test
 claude.ai & plugins : where, sync-remote, pull-claude-ai, package
-Portability         : export, import-log, obsidian-note, dashboard
+Portability         : export, import-log, obsidian-note, dashboard, publish-repo
 """
 import argparse
 import sys
@@ -20,6 +20,7 @@ import health  # noqa: E402
 import insights  # noqa: E402
 import lifecycle  # noqa: E402
 import portability  # noqa: E402
+import publish  # noqa: E402
 import remote  # noqa: E402
 
 
@@ -51,8 +52,8 @@ def main():
     ev = lsub.add_parser("event")
     ev.add_argument("--skill", required=True)
     ev.add_argument("--type", required=True,
-                    choices=["installed", "modified", "updated", "uninstalled", "disabled", "enabled", "restored", "purpose"])
-    for flag in ("--date", "--by", "--summary", "--source", "--purpose", "--reason"):
+                    choices=["installed", "modified", "updated", "uninstalled", "disabled", "enabled", "restored", "purpose", "rationale"])
+    for flag in ("--date", "--by", "--summary", "--source", "--purpose", "--reason", "--rationale"):
         ev.add_argument(flag)
     ev.add_argument("--from", dest="from_ref")
     ev.add_argument("--to", dest="to_ref")
@@ -65,6 +66,7 @@ def main():
     p.add_argument("--run", required=True)
     p.add_argument("--name", required=True)
     p.add_argument("--summary")
+    p.add_argument("--rationale", help="the user's reason for the update")
 
     # lifecycle
     p = cmd("stage-install", lifecycle.cmd_stage_install, "fetch a skill from GitHub, a folder or a zip into staging")
@@ -90,6 +92,7 @@ def main():
     p.add_argument("--name", nargs="*")
     p.add_argument("--preview", action="store_true")
     p.add_argument("--reason")
+    p.add_argument("--rationale", help="the user's reason for the rollback")
     p = cmd("new", lifecycle.cmd_new, "create a skill from the template")
     p.add_argument("--name", required=True)
     p.add_argument("--description", required=True)
@@ -123,10 +126,13 @@ def main():
     p.add_argument("--report")
     p = cmd("import-log", portability.cmd_import_log, "merge the log from an export zip")
     p.add_argument("--zip", required=True)
-    p = cmd("obsidian-note", portability.cmd_obsidian_note, "write the skills log into the Obsidian note and set last-revision")
+    p = cmd("obsidian-note", portability.cmd_obsidian_note, "write the skills log and dashboard link into the Obsidian note and set its revision date and time")
     p.add_argument("--path", help="note path (default: obsidian_note in config.json)")
     p = cmd("dashboard", portability.cmd_dashboard, "write the HTML dashboard")
     p.add_argument("--out")
+    p = cmd("publish-repo", publish.cmd_publish_repo, "sync published skills into the GitHub repo clone (sanitized); --push commits and pushes")
+    p.add_argument("--push", action="store_true")
+    p.add_argument("--message")
 
     args = ap.parse_args()
     args.fn(args)

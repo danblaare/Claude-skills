@@ -26,5 +26,5 @@ Sources: a GitHub URL (repo, or `…/tree/<branch>/<path>` to a skill folder), a
    - Record each text fix in its `local_patches`, so future updates keep them.
 6. **Auto-trigger wording (optional):** if the user wants stronger triggering, propose a new description. On approval, edit the staged SKILL.md and add a `frontmatter_description` patch to the stage file. Keep it quoted YAML under 1024 characters.
 7. **Install on approval:** `place --stage-file <file> --purpose "<used for, ≤12 words>" [--replace]`. It backs up, installs, tracks GitHub sources in the manifest, sets the baseline and logs the install.
-8. **Log bundling or rewording:** `log event --type modified --by Claude --summary "<what and why, plain>"`.
+8. **Log bundling or rewording:** ask the user for the rationale (shared rule 4), then run `log event --type modified --by Claude --summary "<what, plain>" --rationale "<their reason>"`.
 9. **Verify:** confirm the skill appears in the available-skills list (it may need a new session). Offer a trigger test (`references/overlap.md`).

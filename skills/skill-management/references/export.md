@@ -8,7 +8,7 @@ Run `export [--report <run_dir>/report.md]`. It writes:
 - `Skills log.md`: an Obsidian note with the log table.
 - `Skills dashboard.html`: the dashboard.
 - `Reports/<date> skills report.md`: when a report is passed.
-- The skills log note set in `obsidian_note`, if configured: its log section is refreshed and `last-revision` is set to today. This also happens at the end of every run (shared rule 8).
+- The skills log note set in `obsidian_note`, if configured: its dashboard link (top of the note) and log section are refreshed, and its revision property is set to the current date and time. This also happens at the end of every run (shared rule 9).
 
 Export after any run that changed skills, and offer it at the end of a full check. If the folder isn't reachable (for example a cloud drive that isn't running), say so and skip. Never write elsewhere without asking.
 

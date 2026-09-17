@@ -15,7 +15,7 @@ Covers the user's own skills and third-party ones.
    - Be quoted YAML under 1024 characters.
 5. **Check:** `validate --name <name>`, then offer a trigger test with 2–3 prompts that should start it and 1–2 that shouldn't.
 6. **Finish:**
-   - Log the body writing: `log event --type modified --by Claude --summary "<plain>"`.
+   - Ask the user why they want the skill (shared rule 4). Log the body writing: `log event --type modified --by Claude --summary "<plain>" --rationale "<their reason>"`.
    - Run `snapshot --name <name>`.
 
 ## Edit
@@ -24,7 +24,8 @@ Covers the user's own skills and third-party ones.
 3. **Tracked GitHub skill** (in `manifest.json`): add the edit to its `local_patches` (`replace_text` or `frontmatter_description`, with a `why`). Run `check` and confirm `local_drift: false`.
 4. **Finish:**
    - Run `validate --name <name>`.
-   - Log it: `log event --type modified --by Claude --summary "<what changed and its effect>"`.
+   - Ask the user for the rationale (shared rule 4).
+   - Log it: `log event --type modified --by Claude --summary "<what changed and its effect>" --rationale "<their reason>"`.
    - Run `snapshot --name <name>`.
 5. If the edit changes triggering, offer a trigger test.
 

@@ -27,7 +27,7 @@ The claude.ai list comes from the desktop app's local copy. It is stale until th
 The app's copy is overwritten on every sync, so never edit it directly.
 1. Run `pull-claude-ai --name <skill>`. This creates an editable copy in `~/.claude/skill-backups/claude-ai-sources/<skill>/` and keeps the untouched original under `_original/`. Pass `--replace` only after confirming; the previous editable copy is archived.
 2. Make the edits in the editable copy, following `references/create-edit.md` (plain-English before/after, approval, `validate --path <copy>`).
-3. Log it: `log event --skill claude.ai:<skill> --type modified --by Claude --summary "<what changes for the user>; waiting for re-upload"`.
+3. Ask the user for the rationale (shared rule 4), then log it: `log event --skill claude.ai:<skill> --type modified --by Claude --summary "<what changes for the user>; waiting for re-upload" --rationale "<their reason>"`.
 4. Run `package --name <skill>`; it picks up the editable copy. Give the upload steps above.
 5. After the user re-uploads, `sync-remote` records "Updated in claude.ai".
 
