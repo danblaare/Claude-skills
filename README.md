@@ -40,6 +40,7 @@ A general manager for your Claude skills (local skills in Claude Code, claude.ai
 - **Asks why:** every edit, update or rollback records your reason in the skills log, so you remember later why a skill changed.
 - **Portability:** export/import, an HTML dashboard, and a running skills log with three tables (local skills, claude.ai skills, app plugins).
 - **Obsidian mirror (optional):** after every run, updates a note with a dashboard link at the top, the log tables, and a date-and-time revision property.
+- **Notes folder (optional):** set `notes_folder` and every run also keeps the other notes in that folder current: a guide note gets one section per skill (what it is, fires when, modes, use it for, rule of thumb). `notes-status` lists skills missing from the guide.
 - **Publish to GitHub (optional):** offers to sync your shared skills to your public repo, strips personal settings, blocks the push if personal data is found, and publishes on your yes.
 - **claude.ai packaging:** shows where each skill works (Claude chat vs Claude Code) and packages skills for upload.
 
@@ -103,7 +104,7 @@ A mandatory security gate built on [SkillTotal](https://github.com/pezhik/skillt
 - Firecrawl MCP for reading the web and Playwright MCP for browser testing.
 - Anthropic's `engineering`, `design` and `product-management` plugins, which super-coding calls at the right moments.
 
-**Configure (optional):** in `skills/skill-management/config.json`, set `export_dir` (where exports go), `obsidian_note` (a note to mirror the skills log into) and `github_repo` (your repo clone, which skills to publish, and the rules that remove personal details; see `references/github.md` and the docstring in `scripts/publish.py`).
+**Configure (optional):** in `skills/skill-management/config.json`, set `export_dir` (where exports go), `obsidian_note` (a note to mirror the skills log into), `notes_folder` (a folder of skills notes to keep current) and `github_repo` (your repo clone, which skills to publish, and the rules that remove personal details; see `references/github.md` and the docstring in `scripts/publish.py`).
 
 ## Safety
 

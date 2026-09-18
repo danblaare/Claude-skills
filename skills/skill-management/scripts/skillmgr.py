@@ -128,6 +128,7 @@ def main():
     p.add_argument("--zip", required=True)
     p = cmd("obsidian-note", portability.cmd_obsidian_note, "write the skills log and dashboard link into the Obsidian note and set its revision date and time")
     p.add_argument("--path", help="note path (default: obsidian_note in config.json)")
+    p = cmd("notes-status", portability.cmd_notes_status, "list skills missing from or stale in the skills notes folder, and each note's revision date")
     p = cmd("dashboard", portability.cmd_dashboard, "write the HTML dashboard")
     p.add_argument("--out")
     p = cmd("publish-repo", publish.cmd_publish_repo, "sync published skills into the GitHub repo clone (sanitized); --push commits and pushes")

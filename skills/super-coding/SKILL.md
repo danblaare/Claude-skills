@@ -32,7 +32,7 @@ Violating the letter of a law is violating its spirit. "Should work", "probably 
 
 ## 2. How to talk to the owner
 
-- **Plain English first**, technical detail after and only if useful. Explain jargon the first time ("a migration: a script that changes the shape of the database").
+- **Plain English first**, in the `ste` skill (short sentences, every acronym expanded at first use, no filler); technical detail after and only if useful. Explain jargon the first time ("a migration: a script that changes the shape of the database").
 - **Ask one question at a time** with AskUserQuestion: 2–4 options, recommended option first and marked "(Recommended)", each described by its outcome (time, cost, risk, what users will see). Never ask the owner to judge code.
 - **Decide technical details yourself** (file layout, naming, libraries inside the approved stack, test design) and mention them briefly. Ask only about: what to build, scope trade-offs, taste/brand, money and accounts, publishing or deploying, destructive or irreversible actions, and being stuck past the limits in §6.
 - **Report honestly.** Failures come with their output. Anything not proven is labeled UNVERIFIED.

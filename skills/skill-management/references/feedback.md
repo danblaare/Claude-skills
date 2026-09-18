@@ -2,7 +2,7 @@
 
 ## Usage review
 1. **Run** `usage [--since YYYY-MM-DD] [--unused-days 30]`. It counts invocations and SKILL.md reads across Claude Code sessions on this machine.
-   - **Blind spots:** claude.ai chats, other machines, and skills Claude followed from memory.
+   - **Blind spots:** claude.ai chats, other machines, and skills Claude followed from memory. `sessions` only sees Skill tool calls and SKILL.md reads, so a claude.ai skill applied from its synced description shows 0 uses. Second check: grep the transcripts in `~/.claude/projects/*/*.jsonl` for the skill's name and its key terms, and read the user's requests around the hits.
    - **Counts are lower bounds:** "no recorded use" doesn't mean useless.
 2. **Report:**
    - Most-used skills.

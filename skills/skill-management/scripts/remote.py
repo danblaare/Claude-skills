@@ -241,20 +241,31 @@ def cmd_pull_claude_ai(args):
 
 
 def _package_source(name):
-    """Local skill first, then disabled, then an editable claude.ai source copy. Returns (folder, log key)."""
-    for folder, key in ((SKILLS / name, name), (DISABLED / name, name), (CLAUDE_AI_SOURCES / name, f"claude.ai:{name}")):
-        if (folder / "SKILL.md").is_file():
-            return folder, key
-    raise SystemExit(json.dumps({"error": f"{name} is not a local skill or an editable claude.ai copy (see pull-claude-ai)"}))
+    """Active local skill first, then an editable claude.ai source copy, and a disabled skill only
+    as a last resort. A disabled skill is out of use on purpose, so it must never silently beat an
+    editable claude.ai copy: that shipped stale text over newer edits (2026-09-18).
+    Returns (folder, log key, shadowed) where shadowed lists the candidates that were not used."""
+    candidates = ((SKILLS / name, name),
+                  (CLAUDE_AI_SOURCES / name, f"claude.ai:{name}"),
+                  (DISABLED / name, name))
+    found = [(folder, key) for folder, key in candidates if (folder / "SKILL.md").is_file()]
+    if not found:
+        raise SystemExit(json.dumps({"error": f"{name} is not a local skill or an editable claude.ai copy (see pull-claude-ai)"}))
+    folder, key = found[0]
+    return folder, key, [str(f) for f, _ in found[1:]]
 
 
 def cmd_package(args):
-    folder, log_key = _package_source(args.name)
+    folder, log_key, shadowed = _package_source(args.name)
     report = check_portability(folder)
+    if shadowed:
+        report.setdefault("warnings", []).append(
+            "this skill exists in more than one place: packaged " + str(folder)
+            + "; ignored " + ", ".join(shadowed) + ". Check this is the copy you edited.")
     cloud, synced_on = claude_ai_skills()
     report["already_on_claude_ai"] = args.name in cloud
     if report["blockers"] and not args.force:
-        print(json.dumps({"skill": args.name, **report, "package": None}, indent=2, ensure_ascii=False))
+        print(json.dumps({"skill": args.name, "source": str(folder), **report, "package": None}, indent=2, ensure_ascii=False))
         return
 
     out_dir = RUNS / dt.datetime.now().strftime("%Y%m%d-%H%M%S") / "package"
@@ -289,5 +300,6 @@ def cmd_package(args):
                                                "modifications": [], "updates": [], "uninstalled": None})
     entry["packaged"] = {"date": core.today(), "file": copies[-1], "verdict": report["verdict"]}
     core.save_log(log)
-    print(json.dumps({"skill": args.name, **report, "package": copies, "size_kb": round(zpath.stat().st_size / 1024, 1),
+    print(json.dumps({"skill": args.name, "source": str(folder), **report, "package": copies,
+                      "size_kb": round(zpath.stat().st_size / 1024, 1),
                       "claude_ai_list_as_of": synced_on}, indent=2, ensure_ascii=False))

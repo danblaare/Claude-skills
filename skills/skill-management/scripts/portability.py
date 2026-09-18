@@ -94,6 +94,43 @@ def cmd_obsidian_note(args):
     print(json.dumps(update_obsidian_note(args.path), indent=2, ensure_ascii=False))
 
 
+def cmd_notes_status(_args):
+    """List skills missing from or stale in the skills notes folder, and each note's revision date."""
+    folder = Path(core.load_config().get("notes_folder") or "")
+    if not str(folder) or not folder.is_dir():
+        print(json.dumps({"error": f"notes_folder not reachable: {folder}"}, indent=2))
+        return
+    rows, _synced = core.log_rows()
+    explained = folder / "00_Explained_placeholder"
+    for f in folder.glob("*.md"):
+        if "explained" in f.name.lower():
+            explained = f
+    text = explained.read_text(encoding="utf-8").lower() if explained.is_file() else ""
+
+    def mentioned(name):
+        return re.search(r"(?<![\w-])" + re.escape(name.lower()) + r"(?![\w-])", text) is not None
+
+    missing, stale = [], []
+    live = {r["name"] for r in rows if r["kind"] in ("local", "claude.ai") and not r["removed"]}
+    for r in rows:
+        if r["kind"] not in ("local", "claude.ai"):
+            continue
+        name = r["name"]
+        if r["removed"]:
+            if mentioned(name) and name not in live:
+                stale.append(name)
+        elif not mentioned(name):
+            missing.append(name)
+    notes = []
+    for f in sorted(folder.glob("*.md")):
+        m = REVISION_PROP.search(f.read_text(encoding="utf-8"))
+        notes.append({"note": f.name, "revision": m.group(0) if m else None,
+                      "modified": dt.datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M")})
+    print(json.dumps({"folder": str(folder), "explained_note": explained.name,
+                      "installed_but_not_in_explained": missing,
+                      "in_explained_but_removed": stale, "notes": notes}, indent=2, ensure_ascii=False))
+
+
 def _usage():
     stats = {}
     for ts, _session, tool, inp in core.transcript_events():
